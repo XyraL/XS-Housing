@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>XS-Housing TV</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:Arial,Helvetica,sans-serif}
+#screen{position:absolute;inset:0}
+.xsm-fill{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;object-fit:contain}
+.xsm-hidden{position:fixed;left:-10000px;top:0;width:320px;height:180px;opacity:0;pointer-events:none;border:0}
+#note{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#c9d2cf;background:radial-gradient(circle at 50% 45%,#1c2421 0%,#050706 70%)}
+#note b{font-size:44px;letter-spacing:.02em;color:#fff}
+#note span{font-size:26px;opacity:.75}
+</style>
+</head>
+<body>
+<div id="screen"></div>
+<div id="note"><b>No signal</b><span>This link cannot be played on the TV.</span></div>
+<script src="js/media.js"></script>
+<script src="js/tv.js"></script>
+</body>
+</html>
