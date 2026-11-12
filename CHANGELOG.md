@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0] — 2026-11-11
+
+- Shells and GTA interiors can have a picture of the inside: go inside from the builder, press Enter, line up the view and press Enter again
+- Those pictures show on the Interiors page and on a place's Interior tab
+- The builder shows which shells are installed on your server, and lists those first
+- Places using a shell your server does not have show up as a problem
+- `/housediag` in game shows which shell packs your game can see
+- Shells that take a while to download the first time no longer fail to load
+- A shell that will not load now says why: its pack is not started, or it never finished loading
+- Dark mode for the smart-home panel: Light, Dark, or dark at night
+- Police raid with a Stormram from their inventory at the door
+- Advanced lockpicks work for break-ins
+- Lockpicks from other scripts start a break-in at a house door
+- Raids and break-ins can be started from radial menus and other scripts
+
 ## [1.0.0] — 2026-11-10
 
 The first release.

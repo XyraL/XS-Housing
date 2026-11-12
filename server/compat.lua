@@ -95,3 +95,7 @@ exports('EnterProperty', function(src, pid)
     Enter.Put(src, p, 'member')
     return true
 end)
+
+exports('Raid', function(src, pid) return Security.Raid(src, tonumber(pid)) end)
+exports('OpenForPolice', function(pid, minutes, src) return Security.OpenForPolice(pid, minutes, src) end)
+exports('IsRaided', function(pid) return Security.IsRaided(pid) end)

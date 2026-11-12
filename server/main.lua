@@ -294,6 +294,9 @@ cb('builderPhoto', function(src, pid, data)
     return true
 end, true)
 
+cb('builderPicture', function(_, kind, value) return true, Pictures.Get(kind, value) or '' end, true)
+cb('builderPictureSave', function(_, kind, value, data) return Pictures.Save(kind, value, data) end, true)
+
 cb('photo', function(_, pid)
     local p = Props.Get(id(pid))
     if not p then return false end
@@ -308,10 +311,12 @@ CreateThread(function()
     Settings.Load()
     Furniture.LoadCatalogue()
     Agency.Load()
+    Pictures.Load()
     Props.Load()
     Garage.SyncAll()
     HouseDoors.ApplyAll()
     Props.SyncAll()
+    Inventory.Useable(Config.Raids.ramItem, function(src) TriggerClientEvent('XS-Housing:client:raid', src) end)
     for _, src in ipairs(Framework.Players()) do
         local cid = Framework.GetCitizenId(src)
         if cid then Access.Push(cid) end
@@ -353,6 +358,9 @@ RegisterCommand(Config.Commands.diag, function(src)
     lines[#lines + 1] = ('%d places · %d inside right now'):format(n, (function() local c = 0 for _ in pairs(Enter.inside) do c = c + 1 end return c end)())
     if src > 0 then
         TriggerClientEvent('chat:addMessage', src, { args = { 'XS-Housing', table.concat(lines, ' | ') } })
+        TriggerClientEvent('XS-Housing:client:diag', src)
+    else
+        lines[#lines + 1] = Text('diag_shells_console')
     end
     for _, l in ipairs(lines) do print('[XS-Housing] ' .. l) end
 end, false)

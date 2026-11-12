@@ -40,7 +40,8 @@
         open: false, page: 'overview', props: [], interiors: { shells: [], ipls: [] }, catalogue: [], categories: [], stats: {}, problems: {}, system: {},
         rights: {}, jobs: [], gangs: [], agency: {}, pending: [], areaPrices: {}, here: null, me: {}, cur: null, curId: null, tab: 'general', dirty: false,
         q: '', fType: 'all', fStatus: 'all', sel: new Set(), overlay: null, logs: [], logKind: 'all', logQ: '', catDraft: null, catQ: '', catCat: 'all',
-        intTab: 'shells', intQ: '', busy: false, imp: {}, shellQ: '', iplQ: '', keyQ: '', keyHits: [], ownerQ: '', ownerHits: [], photo: null, unitForm: null, exportText: '',
+        intTab: 'shells', intQ: '', intHave: true, have: null, busy: false, imp: {}, shellQ: '', iplQ: '', keyQ: '', keyHits: [], ownerQ: '', ownerHits: [], photo: null, unitForm: null, exportText: '',
+        pics: {}, picKeys: new Set(), picErr: {}, picQ: [], picBusy: false,
     };
 
     const byId = (id) => S.props.find((p) => String(p.id) === String(id));
@@ -49,6 +50,19 @@
     const statusName = (k) => t(`hb_status_${k}`, null, STATUS[k] || k);
     const statusOf = (p) => (p.owner ? (p.owner.kind === 'owned' ? 'owned' : p.owner.kind) : 'sale');
     const shellOf = (model) => S.interiors.shells.find((s) => s.model === model);
+    const installed = (model) => (S.have && model && Object.prototype.hasOwnProperty.call(S.have, model) ? S.have[model] : null);
+    const haveCount = () => (S.have ? S.interiors.shells.filter((s) => S.have[s.model]).length : null);
+    const byInstalled = (list) => (S.have ? list.slice().sort((a, b) => (S.have[b.model] ? 1 : 0) - (S.have[a.model] ? 1 : 0)) : list);
+    const packLine = (s) => `${s.pack}${S.have && s.free ? ` · ${t('hb_free', null, 'free')}` : ''}`;
+    function shellChip(s) {
+        const have = installed(s.model);
+        if (have === null) return `<span class="bx-chip ${s.free ? 'ok' : 'off'}">${esc(s.free ? t('hb_free', null, 'free') : t('hb_paid', null, 'paid'))}</span>`;
+        return have ? `<span class="bx-chip ok">${esc(t('hb_installed', null, 'Installed'))}</span>` : `<span class="bx-chip off">${esc(t('hb_not_installed', null, 'Not installed'))}</span>`;
+    }
+    function noShells() {
+        if (haveCount() !== 0) return '';
+        return `<div class="bx-issue bad hb-noshells"><i>${I('alert', 13)}</i><div><b>${esc(t('hb_no_shells', null, 'Your game cannot see any shells'))}</b><span>${esc(t('hb_no_shells_sub', null, 'Start your shell pack in server.cfg, restart the server and rejoin. /housediag shows what your game can see.'))}</span></div></div>`;
+    }
     const iplOf = (id) => S.interiors.ipls.find((i) => i.id === id);
     const pt = (p) => (p ? `${fx(p.x)}, ${fx(p.y)}, ${fx(p.z)}` : '—');
 
@@ -125,6 +139,7 @@
         if (d.type !== 'building') {
             const k = d.interior.kind;
             if (k === 'shell' && !d.interior.shell) add('bad', t('hb_iss_shell', null, 'No shell picked'), 'interior');
+            if (k === 'shell' && d.interior.shell && installed(d.interior.shell) === false) add('bad', t('hb_iss_shell_missing', null, 'This shell is not on your server, so nobody can go inside'), 'interior');
             if (k === 'shell' && (shellOf(d.interior.shell) || {}).guess && !d.interior.exit) add('warn', t('hb_iss_door_guess', null, 'Place the inside door for this shell'), 'interior');
             if (k === 'ipl' && !iplOf(d.interior.ipl)) add('bad', t('hb_iss_ipl', null, 'No GTA interior picked'), 'interior');
             if (k === 'mlo' && !d.doors.length) add('warn', t('hb_iss_mlo_doors', null, 'No MLO doors picked, so it cannot lock'), 'interior');
@@ -196,7 +211,8 @@ ${navItem('access', 'shield', t('hb_access', null, 'Access'))}
         if (!el) return;
         const s = S.system || {};
         const pill = (on, label) => `<span class="bx-pill ${on ? '' : 'off'}"><i></i>${esc(label)}</span>`;
-        el.innerHTML = `${pill(!!s.doorlock, s.doorlock || t('hb_builtin_doors', null, 'Built-in doors'))}${pill(!!s.garage, s.garage || t('hb_no_garage', null, 'No garage script'))}${pill(!!s.inventory, s.inventory || t('hb_no_inventory', null, 'No inventory'))}`;
+        const n = haveCount();
+        el.innerHTML = `${n === null ? '' : pill(n > 0, n > 0 ? t('hb_n_shells', { n }, `${n} shells`) : t('hb_no_shells_pill', null, 'No shells'))}${pill(!!s.doorlock, s.doorlock || t('hb_builtin_doors', null, 'Built-in doors'))}${pill(!!s.garage, s.garage || t('hb_no_garage', null, 'No garage script'))}${pill(!!s.inventory, s.inventory || t('hb_no_inventory', null, 'No inventory'))}`;
     }
 
     function render() {
@@ -255,7 +271,7 @@ ${navItem('access', 'shield', t('hb_access', null, 'Access'))}
     ${TYPES.filter((x) => x.id !== 'unit').slice(0, 4).map((x) => `<button class="bx-tpl" data-act="new" data-type="${x.id}"><span class="bx-kindico">${I(x.icon, 18)}</span><div><b>${esc(typeName(x.id))}</b><span>${esc(t(`hb_type_${x.id}_sub`, null, ({ house: 'A street house: a door, a yard and a shell or GTA interior.', mlo: 'A house built into the map. Pick its doors and draw its rooms.', building: 'One lobby door with as many apartments as you like.', office: 'A business space a job or crew can own.' })[x.id] || ''))}</span></div></button>`).join('')}
   </div></div>
 <div class="bx-sec"><div class="bx-sectitle"><h2>${esc(t('hb_system', null, 'What XS-Housing found'))}</h2></div>
-  <div class="bx-sysgrid">${sysRow('Framework', sys.framework)}${sysRow('Inventory', sys.inventory)}${sysRow('Door locks', sys.doorlock || t('hb_builtin', null, 'built in'))}${sysRow('Garage', sys.garage)}${sysRow('Dispatch', sys.dispatch)}${sysRow('Banking', sys.banking)}${sysRow('Phone', sys.phone)}${sysRow('XS-MDT', sys.mdt ? 'warrants on' : null)}${sysRow('bob74_ipl', sys.bob74 ? 'running' : null)}${sysRow('Screenshots', sys.screenshot ? 'screenshot-basic' : null)}</div></div>`;
+  <div class="bx-sysgrid">${haveCount() === null ? '' : sysRow('Shells', haveCount() ? t('hb_shells_have', { n: haveCount(), total: S.interiors.shells.length }, `${haveCount()} of ${S.interiors.shells.length} installed`) : null)}${sysRow('Framework', sys.framework)}${sysRow('Inventory', sys.inventory)}${sysRow('Door locks', sys.doorlock || t('hb_builtin', null, 'built in'))}${sysRow('Garage', sys.garage)}${sysRow('Dispatch', sys.dispatch)}${sysRow('Banking', sys.banking)}${sysRow('Phone', sys.phone)}${sysRow('XS-MDT', sys.mdt ? 'warrants on' : null)}${sysRow('bob74_ipl', sys.bob74 ? 'running' : null)}${sysRow('Screenshots', sys.screenshot ? 'screenshot-basic' : null)}</div></div>`;
     }
 
     function filtered(buildings) {
@@ -406,14 +422,102 @@ ${isBuilding ? '' : pointGroup({ key: 'extraDoors', label: 'Extra doors', icon: 
 </div></div></div></div>`;
     }
 
+    const picKey = (kind, v) => `${kind}:${v}`;
+
+    function picBody(kind, v, small) {
+        const k = picKey(kind, v);
+        if (!v) return `<div class="hb-picmsg">${I(kind === 'ipl' ? 'building' : 'warehouse', small ? 20 : 26)}<span>${esc(t('hb_pic_pick', null, 'Pick one to see inside'))}</span></div>`;
+        if (S.pics[k]) return `<img src="${esc(S.pics[k])}" alt="">`;
+        if (S.pics[k] === null) return '<div class="hb-picmsg"><i class="hb-spin"></i></div>';
+        if (S.picErr[k]) return `<div class="hb-picmsg bad">${I('alert', small ? 18 : 22)}<span>${esc(S.picErr[k])}</span></div>`;
+        if (small) return `<div class="hb-picmsg">${I(kind === 'ipl' ? 'building' : 'warehouse', 20)}<span>${esc(t('hb_pic_none', null, 'No picture yet'))}</span></div>`;
+        if (!S.system.screenshot) return `<div class="hb-picmsg">${I('camera', 26)}<span>${esc(t('hb_pic_needs', null, 'Pictures need screenshot-basic'))}</span></div>`;
+        return `<div class="hb-picmsg">${I('camera', 26)}<span>${esc(t('hb_pic_none', null, 'No picture yet'))}</span><small class="hb-pichow">${esc(t('hb_pic_how', null, 'Go inside, press Enter, line up a nice view and press Enter again.'))}</small><button class="bx-btn xs primary" data-act="preview">${I('eye', 12)}${esc(t('hb_pic_go', null, 'Go inside'))}</button></div>`;
+    }
+
+    function picHtml(kind, v, small) {
+        const k = picKey(kind, v);
+        if (v && S.pics[k] === undefined && S.picKeys.has(k)) {
+            S.pics[k] = null;
+            S.picQ.push([kind, v]);
+            setTimeout(pumpPics, 0);
+        }
+        return `<div class="hb-pic ${small ? 'sm' : ''}" data-pic="${esc(k)}" data-small="${small ? 1 : 0}">${picBody(kind, v, small)}</div>`;
+    }
+
+    function patchPic(k) {
+        const at = k.indexOf(':');
+        const kind = k.slice(0, at);
+        const v = k.slice(at + 1);
+        root.querySelectorAll('.hb-pic').forEach((el) => {
+            if (el.dataset.pic !== k) return;
+            const card = el.closest('.hb-insidecard');
+            if (card) card.outerHTML = insideCard(kind, v);
+            else el.innerHTML = picBody(kind, v, el.dataset.small === '1');
+        });
+    }
+
+    async function pumpPics() {
+        if (S.picBusy) return;
+        S.picBusy = true;
+        while (S.picQ.length) {
+            const [kind, v] = S.picQ.shift();
+            const k = picKey(kind, v);
+            const res = await XS.rpc('b:picture', { kind, value: v });
+            S.pics[k] = res.ok && res.data ? res.data : '';
+            if (!S.pics[k]) S.picKeys.delete(k);
+            patchPic(k);
+        }
+        S.picBusy = false;
+    }
+
+    async function keepPicture(kind, v, image) {
+        const k = picKey(kind, v);
+        const small = await downscale(image, 640, 360);
+        const saved = await XS.rpc('b:savePicture', { kind, value: v, data: small });
+        if (!saved.ok) { S.picErr[k] = saved.error || t('hb_pic_failed', null, 'The picture did not work.'); return false; }
+        S.pics[k] = small;
+        S.picKeys.add(k);
+        delete S.picErr[k];
+        return true;
+    }
+
+    function insideCard(kind, v) {
+        const k = picKey(kind, v);
+        const has = !!S.pics[k];
+        return `<div class="bx-card hb-insidecard"><div class="bx-cardhead"><h3>${esc(t('hb_pic_inside', null, 'Inside'))}</h3>${has && S.system.screenshot ? `<button class="bx-btn xs ghost" data-act="preview">${I('camera', 12)}${esc(t('hb_pic_retake', null, 'Retake'))}</button>` : ''}</div><div class="bx-cardbody">${picHtml(kind, v, false)}</div></div>`;
+    }
+
     function shellPicker() {
         const q = S.shellQ.trim().toLowerCase();
-        const list = S.interiors.shells.filter((s) => !q || `${s.label} ${s.model} ${s.pack}`.toLowerCase().includes(q)).slice(0, 80);
+        const list = byInstalled(S.interiors.shells.filter((s) => !q || `${s.label} ${s.model} ${s.pack}`.toLowerCase().includes(q))).slice(0, 80);
         const curShell = shellOf(S.cur.interior.shell);
-        return `<div class="bx-filter" style="width:100%;margin-bottom:8px">${I('search', 15)}<input class="bx-input" id="hb-shellq" value="${esc(S.shellQ)}" placeholder="${esc(t('hb_shell_search', { n: S.interiors.shells.length }, `Search ${S.interiors.shells.length} shells`))}"></div>
-        ${curShell ? `<div class="hb-cur">${I('check', 14)}<b>${esc(curShell.label)}</b><span class="bx-mono">${esc(curShell.model)}</span><span class="bx-chip ${curShell.free ? 'ok' : 'warn'}">${esc(curShell.free ? t('hb_free', null, 'free') : t('hb_paid', null, 'paid pack'))}</span>${curShell.guess ? `<span class="bx-chip warn">${esc(t('hb_door_unknown', null, 'door not known'))}</span>` : ''}</div>` : ''}
-        <div class="hb-picklist xsp-scroll">${list.map((s) => `<button class="hb-pick ${s.model === S.cur.interior.shell ? 'on' : ''}" data-act="pickshell" data-model="${esc(s.model)}"><b>${esc(s.label)}</b><small>${esc(s.model)} · ${esc(s.pack)}</small><span class="bx-chip ${s.free ? 'ok' : 'off'}">${esc(s.free ? t('hb_free', null, 'free') : t('hb_paid', null, 'paid'))}</span></button>`).join('')}</div>
-        ${field(t('hb_custom_shell', null, 'Or any model name'), inp('interior.shell', { mono: true, placeholder: 'shell_v16low' }), t('hb_custom_shell_hint', null, 'Paid shells only work when the server streams that pack.'))}`;
+        const curChip = curShell && installed(curShell.model) === null ? `<span class="bx-chip ${curShell.free ? 'ok' : 'warn'}">${esc(curShell.free ? t('hb_free', null, 'free') : t('hb_paid', null, 'paid pack'))}</span>` : (curShell ? shellChip(curShell) : '');
+        return `${noShells()}<div class="bx-filter" style="width:100%;margin-bottom:8px">${I('search', 15)}<input class="bx-input" id="hb-shellq" value="${esc(S.shellQ)}" placeholder="${esc(t('hb_shell_search', { n: S.interiors.shells.length }, `Search ${S.interiors.shells.length} shells`))}"></div>
+        ${curShell ? `<div class="hb-cur">${I('check', 14)}<b>${esc(curShell.label)}</b><span class="bx-mono">${esc(curShell.model)}</span>${curChip}${curShell.guess ? `<span class="bx-chip warn">${esc(t('hb_door_unknown', null, 'door not known'))}</span>` : ''}</div>` : ''}
+        <div class="hb-picklist xsp-scroll">${list.map((s) => `<button class="hb-pick ${s.model === S.cur.interior.shell ? 'on' : ''} ${installed(s.model) === false ? 'hb-missing' : ''}" data-act="pickshell" data-model="${esc(s.model)}"><b>${esc(s.label)}</b><small>${esc(s.model)} · ${esc(packLine(s))}</small>${shellChip(s)}</button>`).join('')}</div>
+        ${field(t('hb_custom_shell', null, 'Or any model name'), inp('interior.shell', { mono: true, placeholder: 'shell_v16low' }), t('hb_custom_shell_hint', null, 'Paid shells only work when the server streams that pack.'))}
+        <div id="hb-modelstate" class="hb-modelstate">${modelState()}</div>`;
+    }
+
+    let modelTimer = null;
+    function modelState() {
+        const m = String((S.cur && S.cur.interior.shell) || '').trim();
+        if (!m || shellOf(m) || !S.have) return '';
+        const have = installed(m);
+        if (have === null) { checkModel(m); return ''; }
+        return shellChip({ model: m });
+    }
+
+    function checkModel(m) {
+        clearTimeout(modelTimer);
+        modelTimer = setTimeout(async () => {
+            const res = await XS.rpc('b:hasModel', { model: m });
+            if (!S.have) return;
+            S.have[m] = !!(res.ok && res.data);
+            const el = root.querySelector('#hb-modelstate');
+            if (el && String((S.cur && S.cur.interior.shell) || '').trim() === m) el.innerHTML = modelState();
+        }, 400);
     }
 
     function iplPicker() {
@@ -433,12 +537,14 @@ ${isBuilding ? '' : pointGroup({ key: 'extraDoors', label: 'Extra doors', icon: 
         let body = '';
         if (k === 'shell') {
             body = `<div class="bx-layout"><div><div class="bx-card"><div class="bx-cardbody">${shellPicker()}</div></div></div><div>
-            <div class="bx-groups">${pointGroup({ key: 'exit', label: 'Inside door', icon: 'door', inside: true, hint: (shellOf(d.interior.shell) || {}).guess ? t('hb_exit_guess', null, 'This shell has no known door yet. Place it once, or people appear in the middle of the room.') : 'Where people appear inside. Left empty, the shell’s own door is used.' }, d.interior.exit ? [d.interior.exit] : [])}</div>
-            <div class="bx-card" style="margin-top:14px"><div class="bx-cardbody"><button class="bx-btn" data-act="preview">${I('eye', 15)}${esc(t('hb_preview', null, 'Go inside to look'))}</button><div class="bx-hint" style="margin-top:8px">${esc(t('hb_preview_hint', null, 'You go in on your own. Press Backspace to come back.'))}</div></div></div></div></div>`;
+            ${insideCard('shell', d.interior.shell)}
+            <div class="bx-groups" style="margin-top:14px">${pointGroup({ key: 'exit', label: 'Inside door', icon: 'door', inside: true, hint: (shellOf(d.interior.shell) || {}).guess ? t('hb_exit_guess', null, 'This shell has no known door yet. Place it once, or people appear in the middle of the room.') : 'Where people appear inside. Left empty, the shell’s own door is used.' }, d.interior.exit ? [d.interior.exit] : [])}</div>
+            <div class="bx-card" style="margin-top:14px"><div class="bx-cardbody"><button class="bx-btn" data-act="preview">${I('eye', 15)}${esc(t('hb_preview', null, 'Go inside to look'))}</button><div class="bx-hint" style="margin-top:8px">${esc(S.system.screenshot ? t('hb_preview_hint_pic', null, 'You go in on your own. Press Enter in there to take the picture, Backspace to come back.') : t('hb_preview_hint', null, 'You go in on your own. Press Backspace to come back.'))}</div></div></div></div></div>`;
         } else if (k === 'ipl') {
             const styles = cur ? XS.list(cur.styles) : [];
             body = `<div class="bx-layout"><div><div class="bx-card"><div class="bx-cardbody">${iplPicker()}</div></div></div><div>
-            ${styles.length ? `<div class="bx-card"><div class="bx-cardhead"><h3>${esc(t('hb_styles_title', null, 'Décor styles owners can pick'))}</h3><small>${esc(t('hb_styles_none_all', null, 'None ticked means all'))}</small></div><div class="bx-cardbody"><div class="hb-checks">${styles.map((s) => `<label class="hb-check"><input type="checkbox" data-style="${esc(s.id)}" ${d.interior.styles.includes(s.id) ? 'checked' : ''}><span>${esc(s.label)}</span><button class="bx-btn xs ${d.interior.defaultStyle === s.id ? 'primary' : 'ghost'}" data-act="defstyle" data-id="${esc(s.id)}">${esc(t('hb_default', null, 'Default'))}</button></label>`).join('')}</div></div></div>` : ''}
+            ${insideCard('ipl', cur ? cur.id : '')}
+            ${styles.length ? `<div class="bx-card" style="margin-top:14px"><div class="bx-cardhead"><h3>${esc(t('hb_styles_title', null, 'Décor styles owners can pick'))}</h3><small>${esc(t('hb_styles_none_all', null, 'None ticked means all'))}</small></div><div class="bx-cardbody"><div class="hb-checks">${styles.map((s) => `<label class="hb-check"><input type="checkbox" data-style="${esc(s.id)}" ${d.interior.styles.includes(s.id) ? 'checked' : ''}><span>${esc(s.label)}</span><button class="bx-btn xs ${d.interior.defaultStyle === s.id ? 'primary' : 'ghost'}" data-act="defstyle" data-id="${esc(s.id)}">${esc(t('hb_default', null, 'Default'))}</button></label>`).join('')}</div></div></div>` : ''}
             <div class="bx-groups" style="margin-top:14px">${pointGroup({ key: 'exit', label: 'Inside door', icon: 'door', inside: true, hint: 'Where people appear inside. Left empty, the interior’s own spawn is used.' }, d.interior.exit ? [d.interior.exit] : [])}</div>
             <div class="bx-card" style="margin-top:14px"><div class="bx-cardbody"><button class="bx-btn" data-act="preview" ${cur ? '' : 'disabled'}>${I('eye', 15)}${esc(t('hb_preview', null, 'Go inside to look'))}</button><div class="bx-hint" style="margin-top:8px">${esc(t('hb_ipl_hint', null, 'Every owner gets their own private copy, so one interior can be used by any number of places.'))}</div></div></div></div></div>`;
         } else if (k === 'mlo') {
@@ -629,10 +735,10 @@ ${(tabBody[S.tab] || tabGeneral)()}
     }
 
     function quickPage() {
-        const shells = S.interiors.shells;
+        const shells = byInstalled(S.interiors.shells);
         return `${head(t('hb_quick', null, 'Quick place'), t('hb_quick_sub', null, 'Walk down a street, aim at a front door and press Enter. Each one becomes a place with a price for its area, an address and a square yard. Press Backspace when you are done.'))}
 <div class="bx-layout"><div><div class="bx-card"><div class="bx-cardbody">
-  ${field(t('hb_quick_shell', null, 'Shell for every house'), `<select class="bx-input" id="hb-quickshell">${shells.map((s) => `<option value="${esc(s.model)}">${esc(s.label)}${s.free ? '' : ' · paid'}</option>`).join('')}</select>`, t('hb_quick_shell_hint', null, 'Change any of them afterwards.'))}
+  ${field(t('hb_quick_shell', null, 'Shell for every house'), `<select class="bx-input" id="hb-quickshell">${shells.map((s) => `<option value="${esc(s.model)}">${esc(s.label)}${installed(s.model) === false ? ` · ${t('hb_not_installed_low', null, 'not installed')}` : (installed(s.model) === null && !s.free ? ' · paid' : '')}</option>`).join('')}</select>`, t('hb_quick_shell_hint', null, 'Change any of them afterwards.'))}
   <button class="bx-btn primary" data-act="quickstart">${I('bolt', 15)}${esc(t('hb_quick_start', null, 'Start'))}</button>
 </div></div></div><div><div class="bx-card"><div class="bx-cardbody">
   <div class="hb-howto"><div><span class="bx-kbd">Enter</span><b>${esc(t('hb_qk_place', null, 'Make a place at the spot you aim at'))}</b></div><div><span class="bx-kbd">Backspace</span><b>${esc(t('hb_qk_done', null, 'Finish'))}</b></div></div>
@@ -643,14 +749,17 @@ ${(tabBody[S.tab] || tabGeneral)()}
     function interiorsPage() {
         const isShell = S.intTab === 'shells';
         const q = S.intQ.trim().toLowerCase();
-        const shells = S.interiors.shells.filter((s) => !q || `${s.label} ${s.model} ${s.pack}`.toLowerCase().includes(q));
+        const n = haveCount();
+        const onlyHave = isShell && n > 0 && S.intHave;
+        const shells = byInstalled(S.interiors.shells.filter((s) => (!q || `${s.label} ${s.model} ${s.pack}`.toLowerCase().includes(q)) && (!onlyHave || S.have[s.model])));
+        const haveBtns = isShell && n > 0 ? `<button class="bx-btn xs ${S.intHave ? 'primary' : 'ghost'}" data-act="inthave" data-v="1">${esc(t('hb_installed', null, 'Installed'))} ${n}</button><button class="bx-btn xs ${S.intHave ? 'ghost' : 'primary'}" data-act="inthave" data-v="0">${esc(t('hb_all', null, 'All'))} ${S.interiors.shells.length}</button>` : '';
         const ipls = S.interiors.ipls.filter((i) => !q || `${i.label} ${i.id} ${i.kind}`.toLowerCase().includes(q));
         const used = (key, val) => S.props.filter((p) => p.data.interior && p.data.interior[key] === val).length;
-        return `${head(t('hb_interiors', null, 'Interiors'), t('hb_interiors_sub', null, 'Every shell and GTA interior you can put behind a door. Free shells come with K4MB1’s starter pack. Paid ones need the pack streamed on your server.'))}
+        return `${head(t('hb_interiors', null, 'Interiors'), t('hb_interiors_sub', null, 'Every shell and GTA interior you can put behind a door. Free shells come with K4MB1’s starter pack. Paid ones need the pack streamed on your server.') + (S.system.screenshot ? ` ${t('hb_interiors_pic', null, 'To give one a picture, press Look, then Enter once you are inside.')}` : ''))}
 <div class="bx-listbar"><div class="bx-tabs" style="margin:0"><button class="bx-tab ${isShell ? 'on' : ''}" data-act="inttab" data-tab="shells">${I('warehouse', 14)}${esc(t('hb_shells', null, 'Shells'))}<em>${S.interiors.shells.length}</em></button><button class="bx-tab ${!isShell ? 'on' : ''}" data-act="inttab" data-tab="ipls">${I('building', 14)}${esc(t('hb_gta', null, 'GTA interiors'))}<em>${S.interiors.ipls.length}</em></button></div>
-  <div class="bx-filter">${I('search', 15)}<input class="bx-input" id="hb-intq" value="${esc(S.intQ)}" placeholder="${esc(t('hb_search_any', null, 'Search'))}"></div></div>
-<div class="hb-cards">${isShell ? shells.map((s) => `<div class="hb-icard"><div class="hb-icard-top">${I('warehouse', 20)}<span class="bx-chip ${s.free ? 'ok' : 'off'}">${esc(s.free ? t('hb_free', null, 'free') : t('hb_paid', null, 'paid'))}</span></div><b>${esc(s.label)}</b><small class="bx-mono">${esc(s.model)}</small><small>${esc(s.pack)}</small><div class="hb-icard-foot"><span class="bx-hint">${esc(t('hb_used', { n: used('shell', s.model) }, `used by ${used('shell', s.model)}`))}</span><button class="bx-btn xs" data-act="intprev" data-kind="shell" data-v="${esc(s.model)}">${I('eye', 12)}${esc(t('hb_look', null, 'Look'))}</button></div></div>`).join('')
-        : ipls.map((i) => `<div class="hb-icard"><div class="hb-icard-top">${I(i.kind === 'office' ? 'office' : (i.kind === 'garage' ? 'garage' : (i.kind === 'house' ? 'home' : 'apartment')), 20)}${i.build ? `<span class="bx-chip warn">${esc(t('hb_build', { n: i.build }, `build ${i.build}+`))}</span>` : (i.needs ? `<span class="bx-chip warn">${esc(i.needs)}</span>` : '<span class="bx-chip ok">base game</span>')}</div><b>${esc(i.label)}</b><small>${esc(i.kind)}${XS.list(i.styles).length ? ` · ${XS.list(i.styles).length} ${esc(t('hb_styles', null, 'styles'))}` : ''}</small>${i.unverified ? `<small class="hb-warnline">${esc(t('hb_check_spawn', null, 'check the spawn'))}</small>` : ''}<div class="hb-icard-foot"><span class="bx-hint">${esc(t('hb_used', { n: used('ipl', i.id) }, `used by ${used('ipl', i.id)}`))}</span><button class="bx-btn xs" data-act="intprev" data-kind="ipl" data-v="${esc(i.id)}">${I('eye', 12)}${esc(t('hb_look', null, 'Look'))}</button></div></div>`).join('')}</div>`;
+  ${haveBtns ? `<div class="hb-havebtns">${haveBtns}</div>` : ''}<div class="bx-filter">${I('search', 15)}<input class="bx-input" id="hb-intq" value="${esc(S.intQ)}" placeholder="${esc(t('hb_search_any', null, 'Search'))}"></div></div>
+${isShell ? noShells() : ''}<div class="hb-cards">${isShell ? shells.map((s) => `<div class="hb-icard ${installed(s.model) === false ? 'hb-missing' : ''}">${picHtml('shell', s.model, true)}<div class="hb-icard-top">${I('warehouse', 20)}${shellChip(s)}</div><b>${esc(s.label)}</b><small class="bx-mono">${esc(s.model)}</small><small>${esc(packLine(s))}</small><div class="hb-icard-foot"><span class="bx-hint">${esc(t('hb_used', { n: used('shell', s.model) }, `used by ${used('shell', s.model)}`))}</span><span class="hb-icard-acts"><button class="bx-btn xs" data-act="intprev" data-kind="shell" data-v="${esc(s.model)}">${I('eye', 12)}${esc(t('hb_look', null, 'Look'))}</button></span></div></div>`).join('')
+        : ipls.map((i) => `<div class="hb-icard">${picHtml('ipl', i.id, true)}<div class="hb-icard-top">${I(i.kind === 'office' ? 'office' : (i.kind === 'garage' ? 'garage' : (i.kind === 'house' ? 'home' : 'apartment')), 20)}${i.build ? `<span class="bx-chip warn">${esc(t('hb_build', { n: i.build }, `build ${i.build}+`))}</span>` : (i.needs ? `<span class="bx-chip warn">${esc(i.needs)}</span>` : '<span class="bx-chip ok">base game</span>')}</div><b>${esc(i.label)}</b><small>${esc(i.kind)}${XS.list(i.styles).length ? ` · ${XS.list(i.styles).length} ${esc(t('hb_styles', null, 'styles'))}` : ''}</small>${i.unverified ? `<small class="hb-warnline">${esc(t('hb_check_spawn', null, 'check the spawn'))}</small>` : ''}<div class="hb-icard-foot"><span class="bx-hint">${esc(t('hb_used', { n: used('ipl', i.id) }, `used by ${used('ipl', i.id)}`))}</span><span class="hb-icard-acts"><button class="bx-btn xs" data-act="intprev" data-kind="ipl" data-v="${esc(i.id)}">${I('eye', 12)}${esc(t('hb_look', null, 'Look'))}</button></span></div></div>`).join('')}</div>`;
     }
 
     function furniturePage() {
@@ -1023,8 +1132,20 @@ ${S.logs.map((l) => { const p = byId(l.property_id); return `<tr><td class="bx-m
             case 'ptdel': { const kind = el.dataset.kind; const list = listFor(kind).slice(); list.splice(Number(el.dataset.i), 1); setList(kind, list); changed(); break; }
             case 'ptgo': { const p = listFor(el.dataset.kind)[Number(el.dataset.i)]; if (p) XS.rpc('b:teleport', p); break; }
             case 'intkind': S.cur.interior.kind = el.dataset.kind; if (el.dataset.kind === 'mlo' && S.cur.type === 'house') S.cur.type = 'mlo'; changed(); break;
-            case 'pickshell': S.cur.interior.shell = el.dataset.model; S.cur.interior.exit = null; changed(); break;
-            case 'pickipl': S.cur.interior.ipl = el.dataset.id; S.cur.interior.exit = null; S.cur.interior.styles = []; S.cur.interior.defaultStyle = ''; changed(); break;
+            case 'pickshell': {
+                S.cur.interior.shell = el.dataset.model;
+                S.cur.interior.exit = null;
+                changed();
+                break;
+            }
+            case 'pickipl': {
+                S.cur.interior.ipl = el.dataset.id;
+                S.cur.interior.exit = null;
+                S.cur.interior.styles = [];
+                S.cur.interior.defaultStyle = '';
+                changed();
+                break;
+            }
             case 'defstyle': S.cur.interior.defaultStyle = el.dataset.id; changed(); break;
             case 'preview': {
                 const res = await XS.rpc('b:preview', { property: S.cur });
@@ -1191,6 +1312,7 @@ ${S.logs.map((l) => { const p = byId(l.property_id); return `<tr><td class="bx-m
                 break;
             }
             case 'inttab': S.intTab = el.dataset.tab; render(); break;
+            case 'inthave': S.intHave = el.dataset.v === '1'; render(); break;
             case 'quickstart': XS.rpc('b:quick', { shell: (root.querySelector('#hb-quickshell') || {}).value }); break;
             case 'cathide': { const d = S.catDraft; const o = d.overrides[el.dataset.id] || {}; o.hidden = !o.hidden; d.overrides[el.dataset.id] = o; render(); break; }
             case 'catdel': { const d = S.catDraft; d.custom = d.custom.filter((c) => c.id !== el.dataset.id); S.catalogue = S.catalogue.filter((c) => c.id !== el.dataset.id); render(); break; }
@@ -1320,6 +1442,10 @@ ${S.logs.map((l) => { const p = byId(l.property_id); return `<tr><td class="bx-m
             if (el.dataset.num || el.type === 'number') v = el.value === '' ? 0 : Number(el.value);
             setPath(S.cur, el.dataset.path, v);
             changed(false);
+            if (el.dataset.path === 'interior.shell') {
+                const st = root.querySelector('#hb-modelstate');
+                if (st) st.innerHTML = modelState();
+            }
         }
     }
 
@@ -1390,6 +1516,13 @@ ${S.logs.map((l) => { const p = byId(l.property_id); return `<tr><td class="bx-m
         S.stats = data.stats || {};
         S.problems = data.problems || {};
         S.system = data.system || {};
+        if (data.found) {
+            const found = new Set(XS.list(data.found));
+            S.have = {};
+            S.interiors.shells.forEach((s) => { S.have[s.model] = found.has(s.model); });
+            S.props.forEach((p) => { const i = p.data.interior; if (i && i.kind === 'shell' && i.shell) S.have[i.shell] = found.has(i.shell); });
+        } else S.have = null;
+        if (data.pictures) S.picKeys = new Set(XS.list(data.pictures));
         S.rights = data.rights || {};
         S.jobs = XS.list(data.jobs);
         S.gangs = XS.list(data.gangs);
@@ -1431,6 +1564,9 @@ ${S.logs.map((l) => { const p = byId(l.property_id); return `<tr><td class="bx-m
                 XS.show('xsp-builder', true);
             } else if (action === 'hide') {
                 XS.show('xsp-builder', false);
+            } else if (action === 'picture') {
+                if (!data.kind || !data.value || !data.image) return;
+                keepPicture(data.kind, data.value, data.image).then(() => render());
             } else if (action === 'close') {
                 S.open = false;
                 S.overlay = null;

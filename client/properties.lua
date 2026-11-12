@@ -21,7 +21,7 @@ local function canBreakIn(p)
     local B = Config.BreakIns
     if not B.enabled or not p.security or not p.security.breakIns then return false end
     if p.status == 'sale' or Housing.Role(p.id) then return false end
-    if B.item and B.item ~= '' and Inventory.Count(B.item) < 1 then return false end
+    if B.item and B.item ~= '' and Inventory.Count(B.item) < 1 and (not B.advancedItem or B.advancedItem == '' or Inventory.Count(B.advancedItem) < 1) then return false end
     return true
 end
 

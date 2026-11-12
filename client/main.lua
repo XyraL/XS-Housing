@@ -13,6 +13,41 @@ function Util.LoadModel(model, timeout)
     return HasModelLoaded(hash)
 end
 
+function Util.LoadShell(model)
+    if type(model) ~= 'string' or model == '' then return false, 'missing' end
+    local hash = joaat(model)
+    if not IsModelInCdimage(hash) then return false, 'missing' end
+    RequestModel(hash)
+    local started, told = GetGameTimer(), false
+    while not HasModelLoaded(hash) do
+        local waited = GetGameTimer() - started
+        if waited > 45000 then return false, 'slow' end
+        if not told and waited > 3000 then
+            told = true
+            Util.Notify(Text('shell_loading'), 'inform')
+        end
+        Wait(50)
+    end
+    return true
+end
+
+function Util.ShellFailed(model, why)
+    print(('^3[XS-Housing]^0 shell %s did not load: %s'):format(tostring(model), why == 'slow' and 'it is on the server but never finished loading' or 'no shell pack on the server has this model'))
+    Util.Notify(Text(why == 'slow' and 'err_shell_slow' or 'err_shell_missing', { model = tostring(model) }), 'error')
+end
+
+function Util.ShellsFound(extra)
+    local found, seen = {}, {}
+    local function check(model)
+        if type(model) ~= 'string' or model == '' or seen[model] then return end
+        seen[model] = true
+        if IsModelInCdimage(joaat(model)) then found[#found + 1] = model end
+    end
+    for _, s in ipairs(Interiors.Shells) do check(s.model) end
+    for _, m in ipairs(extra or {}) do check(m) end
+    return found
+end
+
 function Util.LoadDict(dict, timeout)
     if HasAnimDictLoaded(dict) then return true end
     if not DoesAnimDictExist(dict) then return false end
@@ -171,4 +206,25 @@ end)
 Framework.OnUnloaded(function()
     Housing.access = {}
     Housing.Emit('access')
+end)
+
+RegisterNetEvent('XS-Housing:client:diag', function()
+    local packs, order, total, have = {}, {}, 0, 0
+    for _, s in ipairs(Interiors.Shells) do
+        local p = packs[s.pack]
+        if not p then
+            p = { n = 0, have = 0 }
+            packs[s.pack] = p
+            order[#order + 1] = s.pack
+        end
+        p.n, total = p.n + 1, total + 1
+        if IsModelInCdimage(joaat(s.model)) then p.have, have = p.have + 1, have + 1 end
+    end
+    local parts = {}
+    for _, name in ipairs(order) do
+        if packs[name].have > 0 then parts[#parts + 1] = ('%s %d/%d'):format(name, packs[name].have, packs[name].n) end
+    end
+    local line = have > 0 and Text('diag_shells', { n = have, total = total, packs = table.concat(parts, ', ') }) or Text('diag_no_shells')
+    TriggerEvent('chat:addMessage', { args = { 'XS-Housing', line } })
+    print('[XS-Housing] ' .. line)
 end)

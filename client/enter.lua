@@ -164,9 +164,10 @@ local function enterPack(pack)
     if interior.kind == 'shell' then
         local origin = Interiors.ShellOrigin(door or { x = 0.0, y = 0.0, z = 0.0 }, pack.id)
         local model = interior.shell ~= '' and interior.shell or (Interiors.Shells[1] and Interiors.Shells[1].model)
-        if not model or not Util.LoadModel(model, 10000) then
+        local loaded, why = Util.LoadShell(model)
+        if not loaded then
             Util.Fade(false)
-            Util.Notify(Text('err_shell_missing', { model = tostring(model) }), 'error')
+            Util.ShellFailed(model, why)
             Housing.Call('exit')
             return
         end

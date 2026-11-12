@@ -16,7 +16,7 @@ Every interior is a private copy, so one shell or GTA interior can sit behind an
 - MLO houses: pick the real doors and draw the rooms. Locks go through your door lock script
 - Apartment buildings: one lobby door, as many apartments as you want, each with its own owner
 - Offices, motel rooms and garages, plus places only a job or a crew can buy
-- 176 shells and 66 GTA interiors to pick from, with décor styles owners can change
+- 176 shells and 66 GTA interiors to pick from, with décor styles owners can change. The builder shows which shells your server has
 - Every place gets its own private copy of its inside, so any number of places can use the same shell or GTA interior
 - Quick place: walk down a street and make a house at every door you aim at
 - Buy outright, rent, or take a mortgage with a deposit and a payment plan
@@ -52,7 +52,7 @@ Optional:
 
 - A target script (ox_target or qb-target). Without one, every door uses E prompts
 - [bob74_ipl](https://github.com/Bob74/bob74_ipl) for GTA interiors with décor styles
-- [screenshot-basic](https://github.com/citizenfx/screenshot-basic) to take listing photos in the builder
+- [screenshot-basic](https://github.com/citizenfx/screenshot-basic) to take listing photos and interior pictures in the builder
 - XS-PoliceSystem or qb-policejob for break-in fingerprints
 - Game build 2944 or newer for the Halloween pumpkins and bats, 3095 for the snow fort
 - Shell packs. 23 of the shells are free in K4MB1's starter pack, the rest need their pack streamed on your server. That includes the 6 shells from `envi_starter_shell_pack`: their inside door is not known, so place it once in the builder for each place
@@ -77,7 +77,9 @@ Optional:
 4. Restart the server. The tables make themselves on the first start.
 5. Join, type `/housebuilder`, and build your first place.
 
-Break-ins use the `lockpick` item that comes with qb-core and ox_inventory. Change it in Settings › Break-ins.
+Break-ins use the `lockpick` item that comes with qb-core and ox_inventory, or an `advancedlockpick`. Change them in Settings › Break-ins.
+
+Police raids need the `police_stormram` item. Most QBCore servers already have it. If yours does not, paste `items/ox_inventory.lua` into `ox_inventory/data/items.lua`, or `items/qb_core.lua` into `qb-core/shared/items.lua`. To raid without an item, empty Ram item in Settings › Raids.
 
 If you use another housing script, stop it before players use the new places. The Tools page in the builder can bring over houses, owners and keys from qb-houses, qbx_properties and ps-housing.
 
@@ -88,7 +90,7 @@ If you use another housing script, stop it before players use the new places. Th
 | `/housebuilder` | Staff | Opens the builder |
 | `/house` | Owners and key holders | Opens the smart-home panel. At a place it opens that one, anywhere else it lists your places. Furnishing still needs you there |
 | `/housetablet` | Estate agents on duty | Opens the agent tablet |
-| `/housediag` | Staff | Prints what XS-Housing found on your server |
+| `/housediag` | Staff | Prints what XS-Housing found on your server. Run in game, it also shows which shell packs your game can see |
 
 ## Works with
 
@@ -106,6 +108,8 @@ If you use another housing script, stop it before players use the new places. Th
 XS-Phone's Home app lists XS-Housing places, locks and unlocks them, and hands out keys.
 
 XS-MultiCharacter lists XS-Housing places in its spawn picker, and skips its own apartment picker while Starter apartments are on here.
+
+Police use the Stormram from their inventory at a house door to raid it, or pick Raid at the door. A lockpick used at a house door through another script (anything that fires `lockpicks:UseLockpick`, like qb-vehiclekeys) starts a break-in here. Radial menus and police scripts can call the client events `XS-Housing:client:raid` and `XS-Housing:client:breakIn`, or the exports below, to do the same at the nearest door.
 
 ## Configuration
 
@@ -129,6 +133,17 @@ exports['XS-Housing']:SetLocked(source, propertyId, locked)
 exports['XS-Housing']:SetKeys(source, propertyId, added, removed)
 exports['XS-Housing']:Spawns(source)                -- home spawn points for a spawn selector
 exports['XS-Housing']:EnterProperty(source, propertyId)
+exports['XS-Housing']:Raid(source, propertyId)      -- the same checks as a raid at the door, then opens it for police
+exports['XS-Housing']:OpenForPolice(propertyId, minutes)   -- opens it for police with no checks, for MDT or warrant scripts
+exports['XS-Housing']:IsRaided(propertyId)
+```
+
+Client:
+
+```lua
+exports['XS-Housing']:Raid()                        -- raids the nearest house door, as if the Stormram was used
+exports['XS-Housing']:BreakIn()                     -- starts a break-in at the nearest house door
+exports['XS-Housing']:NearestDoor(maxDistance)      -- { id, label, type, distance } or nil
 ```
 
 ## Support

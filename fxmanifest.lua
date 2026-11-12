@@ -5,7 +5,7 @@ lua54 'yes'
 name 'XS-Housing'
 author 'XyraL'
 description 'Houses, apartments, MLOs and offices for Qbox and QBCore, built in game, with furniture, yards, keys, rent, mortgages, break-ins and raids.'
-version '1.0.0'
+version '1.1.0'
 
 dependencies {
     'ox_lib',
@@ -73,6 +73,7 @@ server_scripts {
     'server/enter.lua',
     'server/security.lua',
     'server/agency.lua',
+    'server/pictures.lua',
     'server/builder.lua',
     'server/compat.lua',
     'server/main.lua',

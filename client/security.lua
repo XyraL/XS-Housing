@@ -51,6 +51,73 @@ function Security.BreakIn(p)
     end
 end
 
+local function nearestDoor(maxDist)
+    local pos = GetEntityCoords(PlayerPedId())
+    local best, bestD
+    for _, p in pairs(Housing.props) do
+        if p.door and p.type ~= 'unit' then
+            local d = #(pos - v3(p.door))
+            if d <= maxDist and (not bestD or d < bestD) then best, bestD = p, d end
+        end
+    end
+    return best, bestD
+end
+
+function Security.Nearest(maxDist)
+    return nearestDoor(maxDist or 2.5)
+end
+
+function Security.UseRam()
+    if IsPedInAnyVehicle(PlayerPedId(), false) then return false end
+    if not Framework.IsCopLocal() then
+        Util.Notify(Text('err_police_only'), 'error')
+        return false
+    end
+    local p = nearestDoor(2.5)
+    if not p then
+        Util.Notify(Text('no_door_here'), 'error')
+        return false
+    end
+    if p.type == 'building' then
+        Places.Lobby(p)
+        return true
+    end
+    if not Config.Raids.enabled or not p.security or not p.security.raids then
+        Util.Notify(Text('err_raids_off'), 'error')
+        return false
+    end
+    if p.status == 'sale' then
+        Util.Notify(Text('err_nobody'), 'error')
+        return false
+    end
+    if p.open then
+        Util.Notify(Text('raid_already_open'), 'inform')
+        return false
+    end
+    Security.Raid(p)
+    return true
+end
+
+function Security.UseLockpick(loud)
+    if IsPedInAnyVehicle(PlayerPedId(), false) then return false end
+    local p = nearestDoor(2.0)
+    if not p then
+        if loud then Util.Notify(Text('no_door_here'), 'error') end
+        return false
+    end
+    if p.type == 'building' then
+        if loud then Places.Lobby(p) end
+        return loud == true
+    end
+    local B = Config.BreakIns
+    if not B.enabled or not p.security or not p.security.breakIns or p.status == 'sale' or Housing.Role(p.id) then
+        if loud then Util.Notify(Text('err_breakins_off'), 'error') end
+        return false
+    end
+    Security.BreakIn(p)
+    return true
+end
+
 function Security.Raid(p)
     local ped = PlayerPedId()
     local ok = lib.progressCircle({
@@ -184,4 +251,26 @@ RegisterNetEvent('XS-Housing:client:ring', function(data)
         local answer = lib.alertDialog({ header = title, content = body .. '\n\n' .. Text('let_in_ask'), centered = true, cancel = true, labels = { confirm = Text('let_in_yes'), cancel = Text('let_in_no') } })
         if answer == 'confirm' then Util.Result(Housing.Call('letIn', data.id, data.from)) end
     end)
+end)
+
+RegisterNetEvent('XS-Housing:client:raid', function() Security.UseRam() end)
+RegisterNetEvent('XS-Housing:client:breakIn', function() Security.UseLockpick(true) end)
+
+RegisterNetEvent('lockpicks:UseLockpick', function()
+    if Config.BreakIns.lockpickEvent then Security.UseLockpick(false) end
+end)
+
+RegisterNetEvent('qb-houses:client:HomeInvasion', function()
+    if GetResourceState('qb-houses') ~= 'started' then Security.UseRam() end
+end)
+
+exports('Raid', function() return Security.UseRam() end)
+exports('BreakIn', function() return Security.UseLockpick(true) end)
+exports('NearestDoor', function(maxDist)
+    local p, d = nearestDoor(tonumber(maxDist) or 2.5)
+    if not p then return nil end
+    return { id = p.id, label = p.label, type = p.type, distance = d }
+end)
+exports('useItem', function(data)
+    if type(data) == 'table' and data.name == Config.Raids.ramItem then Security.UseRam() end
 end)

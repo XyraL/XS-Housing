@@ -66,6 +66,7 @@ function Builder.Data(src)
     return {
         properties = list,
         interiors = Interiors.Public(),
+        pictures = Pictures.Keys(),
         catalogue = Furniture.Live(),
         categories = Catalogue.Categories,
         seasons = Seasons.List(), season = Seasons.current,

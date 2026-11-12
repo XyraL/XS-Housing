@@ -154,6 +154,7 @@ Config.Panel = {
     lock = true, lights = true, music = true, cameras = true, keys = true, bills = true,
     visitors = true, furniture = true, security = true, style = true, storage = true, settings = true,
     fromAnywhere = true,     -- /house opens the panel away from home too. Furnishing still needs you there
+    theme = 'night',         -- the screen look players start on: 'light', 'dark', or 'night' (dark from 20:00 to 06:00 game time)
     prop = 'hei_prop_hei_securitypanel', -- the screen on the wall at every panel point. false for none
     propTurn = 0.0,          -- starting turn when staff place a panel point. Use 180 if your prop faces into the wall
 }
@@ -222,6 +223,8 @@ Config.Security = {
 Config.BreakIns = {
     enabled = true,
     item = 'lockpick',
+    advancedItem = 'advancedlockpick', -- works too, when an item is needed. '' for none
+    lockpickEvent = true,    -- using a lockpick at a door through another script's lockpick item (lockpicks:UseLockpick) starts a break-in
     removeItemChance = 30,
     difficulty = {
         { 'easy', 'easy', 'medium' },
@@ -250,7 +253,7 @@ Config.Raids = {
     types = { 'leo' },
     minGrade = 0,
     needWarrant = false,     -- needs an active warrant on the owner in XS-MDT
-    ramItem = '',
+    ramItem = 'police_stormram', -- police need it to breach a door: use it from the inventory at the door, or pick Raid there. '' for none
     openMinutes = 10,
     notifyOwner = true,
     search = true,

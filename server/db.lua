@@ -86,6 +86,12 @@ local TABLES = {
         PRIMARY KEY (`id`),
         KEY `xsh_claim_cid` (`citizenid`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+    [[CREATE TABLE IF NOT EXISTS `xs_housing_pictures` (
+        `id` VARCHAR(100) NOT NULL,
+        `data` MEDIUMTEXT NOT NULL,
+        `updated_at` INT NOT NULL DEFAULT 0,
+        PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
 }
 
 function Db.Setup()

@@ -131,6 +131,7 @@ Settings.Sections = {
         { 'Panel.storage', 'bool' },
         { 'Panel.settings', 'bool' },
         { 'Panel.fromAnywhere', 'bool' },
+        { 'Panel.theme', 'select', options = { 'night', 'light', 'dark' } },
     } },
     { id = 'doorbell', icon = 'bell', fields = {
         { 'Doorbell.enabled', 'bool' },
@@ -151,6 +152,8 @@ Settings.Sections = {
     { id = 'breakins', icon = 'crowbar', fields = {
         { 'BreakIns.enabled', 'bool' },
         { 'BreakIns.item', 'item', off = true, needs = 'BreakIns.enabled' },
+        { 'BreakIns.advancedItem', 'item', off = true, needs = 'BreakIns.enabled' },
+        { 'BreakIns.lockpickEvent', 'bool', needs = 'BreakIns.enabled' },
         { 'BreakIns.removeItemChance', 'pct', needs = 'BreakIns.enabled' },
         { 'BreakIns.difficulty.1', 'seq', options = LEVELS, max = 6, needs = 'BreakIns.enabled' },
         { 'BreakIns.difficulty.2', 'seq', options = LEVELS, max = 6, needs = 'BreakIns.enabled' },

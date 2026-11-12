@@ -31,6 +31,7 @@
         { model: 'shell_highend', label: 'High-end house', pack: 'K4MB1 deluxe', free: false }, { model: 'shell_garagem', label: 'Medium garage', pack: 'K4MB1 garages', free: false },
         { model: 'shell_office1', label: 'Small office', pack: 'K4MB1 offices', free: false }, { model: 'shell_ranch', label: 'Ranch house', pack: 'K4MB1 deluxe', free: false },
     ];
+    const FOUND = params.get('found') === 'none' ? [] : SHELLS.filter((x) => x.free).map((x) => x.model);
     const IPLS = [
         { id: 'eclipse_modern', label: 'Eclipse Towers, Modern', kind: 'apartment', styles: [{ id: 'modern', label: 'Modern' }, { id: 'moody', label: 'Moody' }, { id: 'vibrant', label: 'Vibrant' }], needs: 'bob74_ipl' },
         { id: 'richard_majestic', label: 'Richard Majestic', kind: 'apartment', styles: [] }, { id: 'low_end', label: 'Low-end apartment', kind: 'apartment', styles: [] },
@@ -75,10 +76,34 @@
         boot: {},
     };
 
+    function room(seed) {
+        const c = document.createElement('canvas');
+        c.width = 1280;
+        c.height = 720;
+        const g = c.getContext('2d');
+        const hue = (seed * 47) % 360;
+        g.fillStyle = `hsl(${hue},18%,72%)`;
+        g.fillRect(0, 0, 1280, 720);
+        g.fillStyle = `hsl(${hue},14%,62%)`;
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(380, 170); g.lineTo(380, 520); g.lineTo(0, 720); g.fill();
+        g.beginPath(); g.moveTo(1280, 0); g.lineTo(900, 170); g.lineTo(900, 520); g.lineTo(1280, 720); g.fill();
+        g.fillStyle = `hsl(${(hue + 30) % 360},22%,38%)`;
+        g.beginPath(); g.moveTo(0, 720); g.lineTo(380, 520); g.lineTo(900, 520); g.lineTo(1280, 720); g.fill();
+        g.fillStyle = 'rgba(255,248,230,.85)';
+        g.fillRect(520, 230, 240, 150);
+        g.fillStyle = `hsl(${(hue + 200) % 360},20%,30%)`;
+        g.fillRect(470, 450, 340, 90);
+        return c.toDataURL('image/jpeg', 0.8);
+    }
+    const PICS = {};
+    let snaps = 0;
+    let previewing = null;
+    if (params.get('pics')) params.get('pics').split(',').forEach((k, i) => { PICS[k] = room(i + 3); });
+
     function builderData() {
         return {
             properties: PROPS.map((p) => Object.assign({}, p, { data: JSON.parse(JSON.stringify(p.data)) })),
-            interiors: { shells: SHELLS, ipls: IPLS }, catalogue: CATALOGUE, categories: CATEGORIES, catalogueMultiplier: 1, catalogueOverrides: {}, catalogueCustom: [],
+            interiors: { shells: SHELLS, ipls: IPLS }, found: FOUND, pictures: Object.keys(PICS), catalogue: CATALOGUE, categories: CATEGORIES, catalogueMultiplier: 1, catalogueOverrides: {}, catalogueCustom: [],
             seasons: [{ id: 'halloween', label: 'Halloween' }, { id: 'winter', label: 'Winter holidays' }, { id: 'july4', label: 'Fourth of July' }], season: 'halloween',
             settings: SETTINGS, jobs: [{ name: 'realestate', label: 'Real Estate' }, { name: 'police', label: 'Police' }], gangs: [{ name: 'ballas', label: 'Ballas' }],
             agency: { enabled: true, job: 'realestate', office: { x: -706.1, y: 268.9, z: 83.1 }, desk: null }, pending: [{ id: 2, price: 299000, rent: null, by: 'Priya Chandran', at: now - 3600 }],
@@ -141,10 +166,14 @@
 
     const reply = (data) => ({ ok: true, data });
     const RPC = {
+        'b:hasModel': (p) => reply(/^shell_|_shell$/.test(String((p || {}).model || '')) && FOUND.length > 0),
         'b:here': () => reply(builderData().here), 'b:refresh': () => reply(builderData()), 'b:players': () => reply([{ citizenid: 'XYR10007', name: 'Rafael Duarte', online: true }, { citizenid: 'XYR10008', name: 'Delia Moss', online: false }]),
         'b:logs': () => reply([{ id: 3, property_id: 1, kind: 'mortgage', name: 'Vincent Valentine', citizenid: 'XYR10001', detail: '8 payments', amount: 57000, at: now - 9 * day }, { id: 4, property_id: 5, kind: 'breakin', name: 'Unknown', detail: 'Lockpicked the door', amount: 0, at: now - 3 * day }, { id: 5, property_id: 1, kind: 'key_give', name: 'Vincent Valentine', detail: 'Isabel Ferreira (coowner)', amount: 0, at: now - 8 * day }]),
         'b:import': (p) => reply({ total: 42, owned: 17, keys: 9, noDoor: 2, made: p.commit ? 40 : undefined }), 'b:problems': () => reply({}),
         'b:save': (p) => reply({ id: p.id || 99, data: p.data, owner: null, keys: [], created: now }),
+        'b:preview': (p) => { const i = (p.property || {}).interior || {}; previewing = i.kind === 'shell' ? ['shell', i.shell] : (i.kind === 'ipl' ? ['ipl', i.ipl] : null); send('builder', 'hide', {}); return reply(true); },
+        'b:savePicture': (p) => { PICS[`${p.kind}:${p.value}`] = p.data; return reply(true); },
+        'b:picture': (p) => reply(PICS[`${p.kind}:${p.value}`] || ''),
         'panel:nearby': () => reply(panelData().nearby),
         'panel:openHouse': (p) => { OPEN.until = p.on ? Math.floor(Date.now() / 1000) + 15 * 60 : null; send('panel', 'update', panelData()); return reply(true); },
         'panel:repairLock': () => reply(true),
@@ -160,6 +189,9 @@
         }, 'listing:quote': (p) => reply(Object.assign({}, listingData().quotes[p.mode], p.mode === 'mortgage' ? { depositPct: p.opts.depositPct || 20, term: p.opts.term || 8 } : {})),
         'agency:refresh': () => reply(agencyData()),
     };
+
+    window.mockPreviewSnap = () => { if (previewing) send('builder', 'picture', { kind: previewing[0], value: previewing[1], image: room(++snaps) }); };
+    window.mockPreviewBack = () => { previewing = null; send('builder', 'show', {}); };
 
     XS.post = async (endpoint, payload) => {
         if (endpoint === 'close') { send(payload.app, 'close', {}); return { ok: true }; }

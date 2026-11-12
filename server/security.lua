@@ -204,6 +204,15 @@ local function alarm(p, src)
     Logs.Add('alarm', p.id, Logs.Who(src), Text('log_alarm'), 0)
 end
 
+local function lockpickOf(src)
+    local B = Config.BreakIns
+    if not B.item or B.item == '' then return nil end
+    for _, item in ipairs({ B.item, B.advancedItem }) do
+        if type(item) == 'string' and item ~= '' and Inventory.Count(src, item) > 0 then return item end
+    end
+    return false
+end
+
 function Security.BreakInCheck(src, id)
     local B = Config.BreakIns
     if not B.enabled then return false, Text('err_breakins_off') end
@@ -217,11 +226,12 @@ function Security.BreakInCheck(src, id)
     if last and os.time() - last < cooldown * 60 then return false, Text('err_cooldown') end
     if B.ownerOnline and #Access.OnlineHolders(id) == 0 then return false, Text('err_owner_offline') end
     if (B.minPolice or 0) > 0 and #Framework.Cops() < B.minPolice then return false, Text('err_min_police', { n = B.minPolice }) end
-    if B.item and B.item ~= '' and Inventory.Count(src, B.item) < 1 then return false, Text('err_need_item', { item = Inventory.Label(B.item) }) end
+    local using = lockpickOf(src)
+    if using == false then return false, Text('err_need_item', { item = Inventory.Label(B.item) }) end
     local lock = sec(p).lock
     if B.brokenLock and tonumber(sec(p).forced) then lock = 1 end
     local diff = B.difficulty[lock] or B.difficulty[#B.difficulty] or { 'medium' }
-    Security.attempts[src] = { id = id, at = os.time() }
+    Security.attempts[src] = { id = id, at = os.time(), item = using }
     return true, { difficulty = diff, lock = lock }
 end
 
@@ -261,8 +271,8 @@ function Security.BreakInResult(src, id, success, bare)
     local B = Config.BreakIns
     local p = Props.Get(id)
     if not p or not p.owner then return false, Text('err_failed') end
-    if B.item and B.item ~= '' and math.random(100) <= (B.removeItemChance or 0) then
-        Inventory.Remove(src, B.item, 1)
+    if att.item and math.random(100) <= (B.removeItemChance or 0) then
+        Inventory.Remove(src, att.item, 1)
         Framework.Notify(src, Text('lockpick_broke'), 'error')
     end
     Security.cooldowns[id] = os.time()
@@ -330,6 +340,19 @@ function Security.Raid(src, id)
         Framework.Notify(other, Text('raid_inside'), 'error')
     end
     return true
+end
+
+function Security.OpenForPolice(id, minutes, src)
+    local p = Props.Get(tonumber(id))
+    if not p then return false end
+    openUp(p, 'police', src or 0, tonumber(minutes) or Config.Raids.openMinutes or 10)
+    Logs.Add('raid', p.id, Logs.Who(src), '', 0)
+    return true
+end
+
+function Security.IsRaided(id)
+    local o = Security.open[tonumber(id)]
+    return o ~= nil and o.mode == 'police'
 end
 
 function Security.Close(src, id)

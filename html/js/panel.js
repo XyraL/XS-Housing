@@ -21,6 +21,27 @@
     const st = () => (S.d && S.d.statement) || {};
     const sec = () => (S.d && S.d.security) || {};
 
+    const THEMES = ['light', 'dark', 'night'];
+    const THEME_KEY = 'xsh-panel-theme';
+    function themePick() {
+        try {
+            const v = localStorage.getItem(THEME_KEY);
+            if (THEMES.includes(v)) return v;
+        } catch (e) {}
+        const d = tiles().theme;
+        return THEMES.includes(d) ? d : 'night';
+    }
+    function isDark() {
+        const th = themePick();
+        if (th !== 'night') return th === 'dark';
+        const h = S.clock ? S.clock.h : 12;
+        return h >= 20 || h < 6;
+    }
+    function applyTheme() {
+        const el = root.querySelector('#ph-screen');
+        if (el) el.classList.toggle('dark', isDark());
+    }
+
     function days(ts) {
         if (!ts) return '—';
         const diff = Number(ts) - Date.now() / 1000;
@@ -78,6 +99,7 @@
     ${s.arrears > 0 ? `<span class="ph-chip bad">${I('alert', 14)}${esc(t('ph_overdue', null, 'Payment overdue'))}</span>` : ''}
   </div>
   <div class="ph-clock"><b>${esc(clockText())}</b><small>${esc(t(`ph_role_${S.d.role}`, null, ROLE_LABEL[S.d.role] || S.d.role))}</small></div>
+  <button class="ph-theme" data-act="theme">${I(({ light: 'sun', dark: 'moon', night: 'clock' })[themePick()], 16)}<span>${esc(t(`ph_theme_${themePick()}`, null, ({ light: 'Light', dark: 'Dark', night: 'Auto' })[themePick()]))}</span></button>
   <button class="ph-x" data-act="close">${I('close', 18)}</button>
 </header>
 <div class="ph-body">
@@ -86,6 +108,7 @@
 </div>
 ${S.d.open ? `<div class="ph-banner">${I('alert', 16)}${esc(t('ph_forced', null, 'The front door was forced open. It shuts again soon.'))}</div>` : ''}
 ${S.modal ? modalHtml() : ''}`;
+        applyTheme();
         if (S.modal && S.modal.input) {
             const i = el.querySelector('#ph-modalin');
             if (i) i.focus();
@@ -405,6 +428,12 @@ ${styles.length && tiles().style !== false ? `<section class="ph-panel"><div cla
         switch (act) {
             case 'close': XS.close('panel'); break;
             case 'page': S.page = el.dataset.page; render(); break;
+            case 'theme': {
+                const next = THEMES[(THEMES.indexOf(themePick()) + 1) % THEMES.length];
+                try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+                render();
+                break;
+            }
             case 'modalno': answer(false); break;
             case 'modalyes': { const i = root.querySelector('#ph-modalin'); answer(i ? (i.value || ' ') : true); break; }
             case 'lock': call('panel:lock', { locked: !d.locked }); break;
@@ -504,6 +533,7 @@ ${styles.length && tiles().style !== false ? `<section class="ph-panel"><div cla
             if (S.clock.m >= 60) { S.clock.m = 0; S.clock.h = (S.clock.h + 1) % 24; }
             const c = root.querySelector('.ph-clock b');
             if (c) c.textContent = clockText();
+            applyTheme();
         }, 2000);
     }
 

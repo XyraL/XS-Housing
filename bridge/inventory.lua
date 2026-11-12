@@ -87,6 +87,15 @@ if IsDuplicityVersion() then
         return found and (found.amount or found.count) or 0
     end
 
+    function Inventory.Useable(item, handler)
+        if not item or item == '' or Inventory.name == 'ox_inventory' then return end
+        if Framework.name == 'qbox' then
+            pcall(function() exports.qbx_core:CreateUseableItem(item, handler) end)
+        elseif Framework.core then
+            pcall(function() Framework.core.Functions.CreateUseableItem(item, handler) end)
+        end
+    end
+
     function Inventory.Remove(src, item, amount, metadata)
         amount = amount or 1
         if not item then return false end

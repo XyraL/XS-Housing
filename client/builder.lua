@@ -23,6 +23,12 @@ local function load()
     local ok, data = Housing.Call('builderData')
     if not ok then return false, data end
     data.here = here()
+    local used = {}
+    for _, p in ipairs(data.properties or {}) do
+        local interior = p.data and p.data.interior
+        if interior and interior.kind == 'shell' and interior.shell then used[#used + 1] = interior.shell end
+    end
+    data.found = Util.ShellsFound(used)
     return true, data
 end
 
@@ -59,10 +65,11 @@ local function startPreview(prop)
     Housing.Call('builderPreview', true)
     Util.Fade(true, 250)
     if interior.kind == 'shell' then
-        if not Util.LoadModel(interior.shell, 10000) then
+        local loaded, why = Util.LoadShell(interior.shell)
+        if not loaded then
             Util.Fade(false, 250)
             Housing.Call('builderPreview', false)
-            Util.Notify(Text('err_shell_missing', { model = tostring(interior.shell) }), 'error')
+            Util.ShellFailed(interior.shell, why)
             return nil
         end
         local origin = Interiors.ShellOrigin(door)
@@ -108,6 +115,10 @@ local INSIDE_KINDS = { storage = true, safe = true, wardrobe = true, panel = tru
 
 UI.Handle('b:refresh', function() return load() end)
 UI.Handle('b:here', function() return true, here() end)
+UI.Handle('b:hasModel', function(p)
+    local model = p and p.model
+    return true, type(model) == 'string' and model ~= '' and IsModelInCdimage(joaat(model)) or false
+end)
 
 UI.Handle('b:place', function(p)
     p = p or {}
@@ -236,18 +247,136 @@ UI.Handle('b:pickDoor', function()
     return true, picked
 end)
 
+local framing = nil
+
+local function screenshot()
+    local done = promise.new()
+    local settled = false
+    exports['screenshot-basic']:requestScreenshot({ encoding = 'jpg', quality = 0.9 }, function(data)
+        if settled then return end
+        settled = true
+        done:resolve(data)
+    end)
+    SetTimeout(10000, function()
+        if settled then return end
+        settled = true
+        done:resolve(nil)
+    end)
+    return Citizen.Await(done)
+end
+
+local function pictureOf(prop)
+    local interior = prop.interior or {}
+    if interior.kind == 'shell' and type(interior.shell) == 'string' and interior.shell ~= '' then return 'shell', interior.shell end
+    if interior.kind == 'ipl' and type(interior.ipl) == 'string' and interior.ipl ~= '' then return 'ipl', interior.ipl end
+    return nil
+end
+
+local function stopFraming()
+    local f = framing
+    if not f then return end
+    framing = nil
+    RenderScriptCams(false, false, 0, true, true)
+    SetCamActive(f.cam, false)
+    DestroyCam(f.cam, true)
+    ClearFocus()
+    local ped = PlayerPedId()
+    SetEntityVisible(ped, true, false)
+    FreezeEntityPosition(ped, false)
+end
+
+local function framePicture(pv, kind, value)
+    local ped = PlayerPedId()
+    local eye = GetPedBoneCoords(ped, 31086, 0.0, 0.0, 0.0)
+    local rot = GetGameplayCamRot(2)
+    local start = vector3(eye.x, eye.y, eye.z + 0.05)
+    local fov = 60.0
+    local cam = CreateCamWithParams('DEFAULT_SCRIPTED_CAMERA', start.x, start.y, start.z, rot.x + 0.0, 0.0, rot.z + 0.0, fov, false, 0)
+    framing = { cam = cam }
+    local f = framing
+    SetCamActive(cam, true)
+    RenderScriptCams(true, false, 0, true, true)
+    FreezeEntityPosition(ped, true)
+    SetEntityVisible(ped, false, false)
+    CreateThread(function()
+        while framing == f do
+            HideHudAndRadarThisFrame()
+            DisableAllControlActions(0)
+            Wait(0)
+        end
+    end)
+    lib.showTextUI(Text('preview_cam_hint'), { position = 'top-center' })
+    local took, data = false, nil
+    while Builder.preview == pv and framing == f do
+        Wait(0)
+        DisableAllControlActions(0)
+        local c = GetCamCoord(cam)
+        local r = GetCamRot(cam, 2)
+        local pitch = math.max(-80.0, math.min(80.0, r.x - GetDisabledControlNormal(0, 2) * 5.0))
+        local yaw = r.z - GetDisabledControlNormal(0, 1) * 5.0
+        SetCamRot(cam, pitch, 0.0, yaw, 2)
+        local h = math.rad(yaw)
+        local fwd = vector3(-math.sin(h), math.cos(h), 0.0)
+        local right = vector3(fwd.y, -fwd.x, 0.0)
+        local move = vector3(0.0, 0.0, 0.0)
+        if IsDisabledControlPressed(0, 32) then move = move + fwd end
+        if IsDisabledControlPressed(0, 33) then move = move - fwd end
+        if IsDisabledControlPressed(0, 35) then move = move + right end
+        if IsDisabledControlPressed(0, 34) then move = move - right end
+        if IsDisabledControlPressed(0, 22) then move = move + vector3(0.0, 0.0, 1.0) end
+        if IsDisabledControlPressed(0, 36) then move = move - vector3(0.0, 0.0, 1.0) end
+        if #move > 0.0 then
+            local nc = c + move * (IsDisabledControlPressed(0, 21) and 5.0 or 1.8) * GetFrameTime()
+            if #(nc - start) <= 40.0 then
+                c = nc
+                SetCamCoord(cam, c.x, c.y, c.z)
+            end
+        end
+        if IsDisabledControlJustPressed(0, 241) then fov = math.max(25.0, fov - 5.0) SetCamFov(cam, fov) end
+        if IsDisabledControlJustPressed(0, 242) then fov = math.min(100.0, fov + 5.0) SetCamFov(cam, fov) end
+        SetFocusPosAndVel(c.x, c.y, c.z, 0.0, 0.0, 0.0)
+        if IsDisabledControlJustPressed(0, 194) then break end
+        if IsDisabledControlJustPressed(0, 191) then
+            lib.hideTextUI()
+            Wait(200)
+            took, data = true, screenshot()
+            break
+        end
+    end
+    lib.hideTextUI()
+    if framing == f then stopFraming() end
+    if not took then return end
+    if type(data) ~= 'string' or data == '' then return Util.Notify(Text('err_photo'), 'error') end
+    PlaySoundFrontend(-1, 'Camera_Shoot', 'Phone_Soundset_Franklin', true)
+    UI.Send('builder', 'picture', { kind = kind, value = value, image = data })
+    Util.Notify(Text('picture_taken'), 'success')
+end
+
 UI.Handle('b:preview', function(p)
     show(false)
-    local pv = startPreview(p.property or {})
+    local prop = p.property or {}
+    local pv = startPreview(prop)
     if not pv then
         show(true)
         return false, Text('err_preview')
     end
-    lib.showTextUI(Text('preview_hint'), { position = 'top-center' })
+    local kind, value = pictureOf(prop)
+    local canSnap = kind ~= nil and GetResourceState('screenshot-basic') == 'started'
+    local hint = Text(canSnap and 'preview_hint_photo' or 'preview_hint')
+    lib.showTextUI(hint, { position = 'top-center' })
     CreateThread(function()
         while Builder.preview == pv do
             Wait(0)
             if IsControlJustPressed(0, 194) then break end
+            if canSnap and IsControlJustPressed(0, 191) then
+                lib.hideTextUI()
+                local ok, err = pcall(framePicture, pv, kind, value)
+                if not ok then
+                    stopFraming()
+                    print(('^1[XS-Housing]^0 picture failed: %s'):format(tostring(err)))
+                end
+                if Builder.preview == pv then lib.showTextUI(hint, { position = 'top-center' }) end
+            end
         end
         lib.hideTextUI()
         if Builder.preview == pv then Builder.EndPreview() end
@@ -317,6 +446,9 @@ end)
 UI.Handle('b:savePhoto', function(p)
     return Housing.Call('builderPhoto', p.id, p.data)
 end)
+
+UI.Handle('b:picture', function(p) return Housing.Call('builderPicture', p.kind, p.value) end)
+UI.Handle('b:savePicture', function(p) return Housing.Call('builderPictureSave', p.kind, p.value, p.data) end)
 
 UI.Handle('b:save', function(p) return Housing.Call('builderSave', p.id, p.data) end)
 UI.Handle('b:delete', function(p) return Housing.Call('builderDelete', p.id) end)
@@ -428,5 +560,7 @@ RegisterCommand(Config.Commands.builder, function()
 end, false)
 
 AddEventHandler('onResourceStop', function(resource)
-    if resource == GetCurrentResourceName() then Builder.EndPreview() end
+    if resource ~= GetCurrentResourceName() then return end
+    stopFraming()
+    Builder.EndPreview()
 end)

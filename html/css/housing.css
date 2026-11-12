@@ -60,6 +60,16 @@
 .hb-icard small{color:var(--b-faint);font:500 11px/1.3 var(--x-font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hb-icard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;color:var(--b-sky)}
 .hb-icard-foot{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px}
+.hb-icard-acts{display:flex;gap:5px}
+.hb-pic{position:relative;width:100%;aspect-ratio:16/9;flex:none;border:1px solid var(--b-line2);border-radius:10px;overflow:hidden;background:repeating-linear-gradient(135deg,rgba(255,255,255,.02) 0 10px,transparent 10px 20px),var(--b-card2)}
+.hb-pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;animation:bxFade .25s ease-out}
+.hb-picmsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:14px;color:var(--b-faint);font:600 12px/1.35 var(--x-font);text-align:center}
+.hb-picmsg.bad{color:var(--b-amber)}
+.hb-pichow{max-width:280px;color:var(--b-faint);font:500 11px/1.4 var(--x-font);opacity:.85}
+.hb-pic.sm{margin-bottom:6px;border-radius:8px}
+.hb-pic.sm .hb-picmsg{gap:6px;padding:8px;font-size:11px}
+.hb-spin{width:22px;height:22px;flex:none;border:2px solid rgba(255,255,255,.12);border-top-color:var(--b-sky);border-radius:50%;animation:hbSpin .8s linear infinite}
+@keyframes hbSpin{to{transform:rotate(360deg)}}
 .hb-warnline{color:var(--b-amber)!important}
 
 .hb-import{display:flex;align-items:center;gap:8px;padding:11px 0;border-bottom:1px solid var(--b-line)}
@@ -99,3 +109,9 @@
 .ag-person small{color:var(--b-faint);font:600 10px/1 var(--x-mono)}
 .ag-person.on{border-color:var(--b-blue);background:rgba(var(--b-blue-rgb),.14)}
 .ag-modes{display:flex;gap:5px;margin-bottom:10px}
+.hb-noshells{margin:0 0 10px;border-color:rgba(var(--b-red-rgb),.35)}
+.hb-noshells span{white-space:normal}
+.hb-havebtns{display:flex;gap:6px;align-items:center;flex:none}
+.hb-modelstate{margin-top:6px}
+.hb-modelstate:empty{display:none}
+.hb-pick.hb-missing b,.hb-pick.hb-missing small,.hb-icard.hb-missing>b,.hb-icard.hb-missing>small{opacity:.55}
