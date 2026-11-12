@@ -18,6 +18,21 @@ Interiors.Shells = {
     { model = 'shell_trevor', label = 'House 4', pack = 'k4mb1-starter', free = true, door = vec4(0.2, -3.82, -0.41, 358.4) },
     { model = 'shell_trailer', label = 'Trailer', pack = 'k4mb1-starter', free = true, door = vec4(-1.27, -2.08, -0.48, 358.84) },
 
+    { model = 'k4_motel2_furn', label = 'Standard Motel', pack = 'K4MB1-StarterShells', free = false, door = vec4(-0.33, -2.51, -0.56, 268.61) },
+    { model = 'k4_hotel4_furn', label = 'Modern Hotel', pack = 'K4MB1-StarterShells', free = false, door = vec4(4.98, 4.24, -0.82, 175.73) },
+    { model = 'k4_house4_furn', label = 'Apartment Furnished', pack = 'K4MB1-StarterShells', free = false, door = vec4(1.38, -10.13, -0.52, 2.18) },
+    { model = 'k4_v16mid1_shell', label = 'Apartment Unfurnished', pack = 'K4MB1-StarterShells', free = false, door = vec4(1.44, -14.04, -0.49, 350.26) },
+    { model = 'k4_v16low1_shell', label = 'Apartment 2 Unfurnished', pack = 'K4MB1-StarterShells', free = false, door = vec4(-1.4, 0.08, 0.35, 359.89), guess = true },
+    { model = 'k4_garage6_shell', label = 'Garage', pack = 'K4MB1-StarterShells', free = false, door = vec4(13.7, 1.63, -0.75, 94.83) },
+    { model = 'k4_office6_shell', label = 'Office', pack = 'K4MB1-StarterShells', free = false, door = vec4(1.19, 5.03, -0.73, 181.86) },
+    { model = 'k4_store1_shell', label = 'Store', pack = 'K4MB1-StarterShells', free = false, door = vec4(-2.79, 4.45, -0.62, 181.96) },
+    { model = 'k4_warehouse1_shell', label = 'Warehouse', pack = 'K4MB1-StarterShells', free = false, door = vec4(-8.84, 0.08, -0.95, 273.72) },
+    { model = 'k4_container_shell', label = 'Container', pack = 'K4MB1-StarterShells', free = false, door = vec4(-0.04, -5.4, -0.21, 1.78) },
+    { model = 'k4_house3_shell', label = 'Apartment Shell', pack = 'K4MB1-StarterShells', free = false, door = vec4(2.96, -3.58, -0.24, 89.08) },
+    { model = 'k4_house11_shell', label = 'Farm House', pack = 'K4MB1-StarterShells', free = false, door = vec4(-7.61, 5.86, -1.24, 180.4) },
+    { model = 'k4_modern9_shell', label = 'Modern Shell', pack = 'K4MB1-StarterShells', free = false, door = vec4(-8.09, 3.85, -0.6, 269.41) },
+    { model = 'k4_warehouse4_shell', label = 'Warehouse Shell', pack = 'K4MB1-StarterShells', free = false, door = vec4(8.53, -3.22, -1.49, 88.66) },
+
     { model = 'shell_medium2', label = 'Medium 2', pack = 'k4mb1-medium-housing-shells-v1', free = false, door = vec4(6.06, 0.3, -0.66, 181.74) },
     { model = 'shell_medium3', label = 'Medium 3', pack = 'k4mb1-medium-housing-shells-v1', free = false, door = vec4(-2.47, 7.75, 1.19, 3.63), faces_out = true },
 

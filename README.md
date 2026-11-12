@@ -16,7 +16,7 @@ Every interior is a private copy, so one shell or GTA interior can sit behind an
 - MLO houses: pick the real doors and draw the rooms. Locks go through your door lock script
 - Apartment buildings: one lobby door, as many apartments as you want, each with its own owner
 - Offices, motel rooms and garages, plus places only a job or a crew can buy
-- 176 shells and 66 GTA interiors to pick from, with décor styles owners can change. The builder shows which shells your server has
+- 190 shells and 66 GTA interiors to pick from, with décor styles owners can change. The builder shows which shells your server has
 - Every place gets its own private copy of its inside, so any number of places can use the same shell or GTA interior
 - Quick place: walk down a street and make a house at every door you aim at
 - Buy outright, rent, or take a mortgage with a deposit and a payment plan
@@ -55,7 +55,7 @@ Optional:
 - [screenshot-basic](https://github.com/citizenfx/screenshot-basic) to take listing photos and interior pictures in the builder
 - XS-PoliceSystem or qb-policejob for break-in fingerprints
 - Game build 2944 or newer for the Halloween pumpkins and bats, 3095 for the snow fort
-- Shell packs. 23 of the shells are free in K4MB1's starter pack, the rest need their pack streamed on your server. That includes the 6 shells from `envi_starter_shell_pack`: their inside door is not known, so place it once in the builder for each place
+- Shell packs. 23 of the shells are free in K4MB1's starter pack, the rest need their pack streamed on your server. K4MB1's newer `K4MB1-StarterShells` pack works too. A pack whose models are not in the list still works: type the model name on the place's Interior tab. That includes the 6 shells from `envi_starter_shell_pack`: their inside door is not known, so place it once in the builder for each place
 
 ## Installation
 

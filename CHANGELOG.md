@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] — 2026-11-11
+
+- Added the 14 shells from K4MB1's newer `K4MB1-StarterShells` pack
+- Clearer message when your shell pack's models are not in the list
+
 ## [1.1.0] — 2026-11-11
 
 - Shells and GTA interiors can have a picture of the inside: go inside from the builder, press Enter, line up the view and press Enter again

@@ -61,7 +61,7 @@
     }
     function noShells() {
         if (haveCount() !== 0) return '';
-        return `<div class="bx-issue bad hb-noshells"><i>${I('alert', 13)}</i><div><b>${esc(t('hb_no_shells', null, 'Your game cannot see any shells'))}</b><span>${esc(t('hb_no_shells_sub', null, 'Start your shell pack in server.cfg, restart the server and rejoin. /housediag shows what your game can see.'))}</span></div></div>`;
+        return `<div class="bx-issue bad hb-noshells"><i>${I('alert', 13)}</i><div><b>${esc(t('hb_no_shells', null, 'Your game has none of these shells'))}</b><span>${esc(t('hb_no_shells_sub', null, 'Start your shell pack in server.cfg, restart the server and rejoin. If it is started, its models go by other names: type one into Or any model name on a place.'))}</span></div></div>`;
     }
     const iplOf = (id) => S.interiors.ipls.find((i) => i.id === id);
     const pt = (p) => (p ? `${fx(p.x)}, ${fx(p.y)}, ${fx(p.z)}` : '—');
