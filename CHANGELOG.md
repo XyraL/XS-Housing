@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.2] — 2026-11-20
+
+- Business accounts now work if your bank starts later
+
+Replace everything except your config.lua. No SQL to run.
+
 ## [1.1.1] — 2026-11-11
 
 - Added the 14 shells from K4MB1's newer `K4MB1-StarterShells` pack

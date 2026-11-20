@@ -351,7 +351,7 @@ RegisterCommand(Config.Commands.diag, function(src)
     local lines = {
         ('XS-Housing %s'):format(GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or ''),
         ('framework %s · inventory %s · target %s'):format(Framework.name or 'none', Inventory.name or 'none', Config.Bridges.target),
-        ('doors %s · garage %s · dispatch %s · banking %s · phone %s'):format(Doors.name or 'built in', Garage.name or 'none', Dispatch.name or 'none', Banking.name or 'none', Phone.name or 'none'),
+        ('doors %s · garage %s · dispatch %s · banking %s · phone %s'):format(Doors.name or 'built in', Garage.name or 'none', Dispatch.name or 'none', Banking.Ready() and Banking.name or 'none', Phone.name or 'none'),
     }
     local n = 0
     for _ in pairs(Props.list) do n = n + 1 end

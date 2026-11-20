@@ -6,18 +6,46 @@ local SUPPORTED = {
     'Renewed-Banking', 'qb-banking', 'okokBanking', 'tgg-banking', 'wasabi_banking', 'fd_banking', 'qb-management',
 }
 
-do
-    local forced = Config.Bridges and Config.Bridges.banking or 'auto'
+local function setting()
+    return Config.Bridges and Config.Bridges.banking or 'auto'
+end
+
+function Banking.Detect()
+    local forced = setting()
     if forced == 'none' then
         Banking.name = nil
     elseif forced ~= 'auto' then
         Banking.name = forced
     else
+        Banking.name = nil
         for _, resource in ipairs(SUPPORTED) do
             if GetResourceState(resource) == 'started' then Banking.name = resource break end
         end
     end
+    return Banking.name
 end
+
+function Banking.Ready()
+    if not Banking.name then Banking.Detect() end
+    return Banking.name ~= nil
+end
+
+Banking.Detect()
+
+AddEventHandler('onResourceStart', function(resource)
+    if Banking.name then return end
+    for _, name in ipairs(SUPPORTED) do
+        if name == resource then
+            Banking.Detect()
+            if Banking.name then print(('^2[XS-Housing]^0 banking found: %s.'):format(Banking.name)) end
+            return
+        end
+    end
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource == Banking.name and setting() ~= Banking.name then Banking.name = nil end
+end)
 
 local function ensure(name)
     if Banking.name == 'Renewed-Banking' then
@@ -37,7 +65,7 @@ end
 
 function Banking.Deposit(name, amount, note)
     amount = math.floor(tonumber(amount) or 0)
-    if amount <= 0 or not Banking.name or not name or name == '' then return false end
+    if amount <= 0 or not Banking.Ready() or not name or name == '' then return false end
     local ok, result = pcall(function()
         ensure(name)
         if Banking.name == 'Renewed-Banking' then

@@ -83,7 +83,7 @@ function Builder.Data(src)
         rights = rights,
         system = {
             framework = Framework.name, target = Config.Bridges.target, inventory = Inventory.name, doorlock = Doors.name, garage = Garage.name,
-            dispatch = Dispatch.name, banking = Banking.name, phone = Phone.name, mdt = GetResourceState('XS-MDT') == 'started',
+            dispatch = Dispatch.name, banking = Banking.Ready() and Banking.name or nil, phone = Phone.name, mdt = GetResourceState('XS-MDT') == 'started',
             bob74 = GetResourceState('bob74_ipl') == 'started', screenshot = GetResourceState('screenshot-basic') == 'started',
         },
         areaPrices = Config.AreaPrices,
